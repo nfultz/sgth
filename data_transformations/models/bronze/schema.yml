@@ -10,10 +10,9 @@ models:
   - name: users_old
     description: "Bronze Stage 1: A simple SQL view created from the challenge_dataset seed. This serves as the consistent starting point for all Bronze transformations."
 
-    # This model doesn't need full column definitions if it just SELECT *,
-    # but we can add basic checks.
     tests:
-      - not_empty
+      - dbt_utils.at_least_one:
+          column_name: id
 
   # 2. Bronze Stage 2: The Python Model (users_flagged.py)
   - name: users_flagged
