@@ -19,6 +19,47 @@ models:
         description: "Standardized first name (e.g., trimmed, title-cased)."
         tests:
           - not_null
+      
+      - name: last_name
+        description: "Standardized last name (e.g., trimmed, title-cased)."
+        tests:
+          - not_null
+
+      - name: email
+        description: "email"
+        tests:
+          - unique
+          - not_null
+
+      - name: phone
+        description: "email"
+        tests:
+          - not_null
+
+      # 
+      - name: status
+        description: "The remediated status of the user, strictly one of 'active' or 'cancelled'."
+        tests:
+          - not_null # Ensures compliance with the NOT NULL constraint
+          # Enforces compliance with the ENUM constraint
+          - accepted_values:
+              values: ['active', 'cancelled']
+              config:
+                # Set a high threshold (e.g., 5%) for the accepted_values test.
+                # If even 1% of the data fails this, it indicates a severe logic error.
+                # error_if: "> 0.01" is a good default for critical checks.
+                fail_on_ratio: true
+                severity: error
+
+      - name: birth_date
+        description: "birth day"
+        tests:
+          - not_null
+
+      - name: created_at
+        description: "create day"
+        tests:
+          - not_null
           
   - name: anomalies_log
     description: "A log table containing user IDs and diagnostic flags for records that were deemed anomalous and remediated (status set to 'cancelled') in the users_new table."
