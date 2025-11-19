@@ -1,0 +1,8 @@
+# profiles.yml
+data_transformations:  # Must match the 'profile' name in dbt_project.yml
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: './data/cleaning.duckdb' # Path to your DuckDB file
+      schema: main
