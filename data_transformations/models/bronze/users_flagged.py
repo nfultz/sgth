@@ -68,8 +68,8 @@ def model(dbt, session):
         col("phone").cast(pl.Int64, strict=False).alias("phone_int"),
 
         # Safely parse raw date strings to temporal types
-        col("birth_date").str.strptime(pl.Date, format="%Y-%m-%d", strict=False).alias("birth_date_dt"),
-        col("created_at").str.strptime(pl.Datetime, format="%Y-%m-%d %H:%M:%S", strict=False).alias("created_at_dt"),
+        col("birth_date").str.strptime(pl.Date, format="%m/%d/%Y", strict=False).alias("birth_date_dt"),
+        col("created_at").str.strptime(pl.Datetime, format="%m/%d/%Y", strict=False).alias("created_at_dt"),
 
         # Pre-clean status and email
         col("status").str.to_lowercase().alias("status_lower"),
