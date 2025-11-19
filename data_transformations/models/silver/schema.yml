@@ -84,7 +84,7 @@ models:
           - not_null
 
       - name: created_at
-        data_type: DATE
+        data_type: DATETIME
         constraints:
           - type: not_null
         description: "create day"
