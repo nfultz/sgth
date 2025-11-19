@@ -14,6 +14,9 @@ from polars import col
 # * Attached is a DB schema for storing the input, the data should conform completely to the schema.
 
 
+# Regex from SO: https://stackoverflow.com/a/201378/986793
+EMAIL_REGEX = r"(?:[a-z0-9!#$%&'*+\x2f=?^_`\x7b-\x7d~\x2d]+(?:\.[a-z0-9!#$%&'*+\x2f=?^_`\x7b-\x7d~\x2d]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9\x2d]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9\x2d]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9\x2d]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+
 def is_18yo(birth_date_dt, created_at_dt):
     """
     Polars expression: TRUE if the user was under 18 or if dates are invalid/missing.
@@ -33,14 +36,22 @@ def is_invalid_identifiers(email_stripped, phone_int, birth_date_dt):
     Polars expression: TRUE if any required identifier is invalid/missing/unparsable.
     (i.e., this returns the ANOMALY flag).
     """
-    return (
-        # Birthdate is invalid if cast failed
-        birth_date_dt.is_null() |
-        # Email is invalid if NULL or empty after stripping
-        email_stripped.is_null() | (email_stripped.str.len_chars() == 0) |
-        # Phone is invalid if cast failed
-        phone_int.is_null()
+# Check 1: Birthdate is invalid if cast failed
+    is_bd_invalid = birth_date_dt.is_null()
+
+    # Check 2: Email is invalid if NULL/empty OR if it fails the regex match
+    is_email_invalid = (
+        email_stripped.is_null() |
+        (email_stripped.str.len_chars() == 0) |
+        # Use str.contains() with the regex. The negation (~) means failure to match is an ANOMALY.
+        ~email_stripped.str.contains(EMAIL_REGEX, literal=False)
     )
+
+    # Check 3: Phone is invalid if cast failed
+    is_phone_invalid = phone_int.is_null()
+
+    return is_bd_invalid | is_email_invalid | is_phone_invalid
+
 
 def is_invalid_status(status_lower):
     """
