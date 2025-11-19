@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: users_stage
+    description: "Temporary polars staging area."
+    config:
+      materialized: table
+      contract:
+        enforced: false
+
+
+  - name: users_new
+    description: "The cleaned and standardized user data ready for downstream analysis."
+    
+    columns:
+
+      - name: id
+        description: "The standardized, unique integer identifier for the user."
+        data_type: INT
+        constraints:
+          - type: not_null
+        tests:
+          - unique
+          - not_null
+
+      # 2. Standardized Names - Must be non-null after cleaning
+      - name: first_name
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: "Standardized first name (e.g., trimmed, title-cased)."
+        tests:
+          - not_null
+      
+      - name: last_name
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: "Standardized last name (e.g., trimmed, title-cased)."
+        tests:
+          - not_null
+
+      - name: email
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: "Standardized and validated email address for the user."
+        tests:
+          - unique
+          - not_null
+
+      - name: phone
+        data_type: BIGINT
+        constraints:
+          - type: not_null
+        description: "User's phone number as integer (BIGINT); -999999999 indicates missing or invalid data."
+        tests:
+          - not_null
+
+      - name: status
+        # DUCK does not have enums
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: "The remediated status of the user, strictly one of 'active' or 'cancelled'."
+        tests:
+          - not_null # Ensures compliance with the NOT NULL constraint
+          # Enforces compliance with the ENUM constraint
+          - accepted_values:
+              values: ['active', 'cancelled']
+              config:
+                # Set a high threshold (e.g., 5%) for the accepted_values test.
+                # If even 1% of the data fails this, it indicates a severe logic error.
+                # error_if: "> 0.01" is a good default for critical checks.
+                fail_on_ratio: true
+                severity: error
+
+      - name: birth_date
+        data_type: DATE
+        constraints:
+          - type: not_null
+        description: "Date of birth"
+        tests:
+          - not_null
+
+      - name: created_at
+        data_type: DATETIME
+        constraints:
+          - type: not_null
+        description: "Timestamp when the user record was created"
+        tests:
+          - not_null
+          
+  - name: anomalies_log
+    description: "A log table containing user IDs and diagnostic flags for records that were deemed anomalous and remediated (status set to 'cancelled') in the users_new table."
+    config:
+      schema: reports # Optional: materializes in a separate 'reports' schema
+      contract:
+        enforced: false
+
+    
+    columns:
+      - name: anomalous_user_id
+        description: "The primary key of the record that was flagged as anomalous."
+
+      - name: remediation_action
+        description: "Description of the automated action taken (e.g., status cancellation)."
+      # ... (document all flag columns as inherited from the Bronze layer)
