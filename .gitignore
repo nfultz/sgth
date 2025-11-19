@@ -1,0 +1,7 @@
+dev.duckdb
+.venv/
+target
+logs
+
+# sensitive data
+seeds/
