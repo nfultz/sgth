@@ -1,0 +1,22 @@
+# models/silver/schema.yml
+
+version: 2
+
+models:
+  - name: users_new
+    description: "The cleaned and standardized user data ready for downstream analysis."
+    
+    columns:
+
+      - name: id
+        description: "The standardized, unique integer identifier for the user."
+        tests:
+          - unique
+          - not_null
+
+      # 2. Standardized Names - Must be non-null after cleaning
+      - name: first_name
+        description: "Standardized first name (e.g., trimmed, title-cased)."
+        tests:
+          - not_null
+          
