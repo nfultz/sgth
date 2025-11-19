@@ -1,0 +1,40 @@
+version: 2
+
+sources:
+  - name: challenge_dataset # Logical name for the source system
+    description: "The raw landing zone for legacy user data. All columns are VARCHAR and nullable."
+
+    tables:
+      - name: users_old # The actual table name in the source database (DuckDB/other)
+        description: "The legacy users table, holding raw, unvalidated data as strings."
+
+        # Freshness checks are useful even in Bronze to monitor source data ingestion
+        loaded_at_field: created_at
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+
+        columns:
+          - name: id
+            description: "User ID (raw string)."
+
+          - name: first_name
+            description: "Raw first name (VARCHAR)."
+
+          - name: last_name
+            description: "Raw last name (VARCHAR)."
+
+          - name: email
+            description: "Raw email address (VARCHAR)."
+
+          - name: phone
+            description: "Raw phone number (VARCHAR)."
+
+          - name: status
+            description: "Raw account status (VARCHAR)."
+
+          - name: birth_date
+            description: "Raw birth date (VARCHAR), inconsistent format expected."
+
+          - name: created_at
+            description: "Raw creation timestamp (VARCHAR)."
