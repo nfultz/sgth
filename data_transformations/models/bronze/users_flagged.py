@@ -105,7 +105,7 @@ def model(dbt, session):
 
         # Safely parse raw date strings to temporal types
         col("birth_date").str.strptime(pl.Date, format="%m/%d/%Y", strict=False).alias("birth_date_dt"),
-        col("created_at").str.strptime(pl.Date, format="%m/%d/%Y", strict=False).alias("created_at_dt"),
+        col("created_at").str.strptime(pl.Datetime, format="%m/%d/%Y", strict=False).alias("created_at_dt"),
 
         # Pre-clean status and email
         col("status").str.to_lowercase().alias("status_lower"),
