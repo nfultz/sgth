@@ -31,6 +31,16 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   data_transformations:
-    # Config indicated by + and applies to all files under models/example/
-    example:
-      +materialized: view
+    # 1. DEFAULT SETTING: Disable contract enforcement for the entire project
+    # This ensures bronze/ and any other directories are excluded by default.
+    +contract:
+      enforced: false
+
+    # 2. SILVER OVERRIDE: Enable contract enforcement specifically for the silver path
+    silver:
+      +contract:
+        enforced: true
+        
+    # Example config for another layer:
+    bronze:
+      +materialized: view # Contracts remain disabled due to the default
