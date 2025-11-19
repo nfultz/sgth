@@ -1,4 +1,4 @@
-# models/silver/users_new.py
+# models/silver/users_stage.py
 import dbt
 import polars as pl
 from polars import col, lit
@@ -15,7 +15,7 @@ def model(dbt, session):
         # If the record is anomalous, set status to 'cancelled'; otherwise, use the cleaned status string.
         # CRITICAL: Comprehensive Status Remediation
         # 1. Check if the record is CLEAN AND represents 'active'
-        pl.when((col("is_anomalous") == False) & (col("status_lower").str == "active"))
+        pl.when((col("is_anomalous") == False) & (col("status_lower") == "active"))
           .then(lit('active'))
 
           # 2. Otherwise (if anomalous OR if clean but status is 'pending', 'inactive', etc.)

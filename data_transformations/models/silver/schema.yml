@@ -44,7 +44,7 @@ models:
         data_type: VARCHAR
         constraints:
           - type: not_null
-        description: "email"
+        description: "Standardized and validated email address for the user."
         tests:
           - unique
           - not_null
@@ -53,7 +53,7 @@ models:
         data_type: BIGINT
         constraints:
           - type: not_null
-        description: "Phone number"
+        description: "User's phone number as integer (BIGINT); -999999999 indicates missing or invalid data."
         tests:
           - not_null
 
@@ -79,7 +79,7 @@ models:
         data_type: DATE
         constraints:
           - type: not_null
-        description: "birth day"
+        description: "Date of birth"
         tests:
           - not_null
 
@@ -87,7 +87,7 @@ models:
         data_type: DATETIME
         constraints:
           - type: not_null
-        description: "create day"
+        description: "Timestamp when the user record was created"
         tests:
           - not_null
           
