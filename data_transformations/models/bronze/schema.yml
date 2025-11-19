@@ -1,40 +1,60 @@
 version: 2
 
-sources:
-  - name: challenge_dataset # Logical name for the source system
-    description: "The raw landing zone for legacy user data. All columns are VARCHAR and nullable."
+seeds:
+  - name: challenge_dataset
+    description: "The raw CSV input file (sensitive data is mocked or handled externally)."
+    # Add tests here to ensure the CSV structure is minimally valid before processing
 
-    tables:
-      - name: users_old # The actual table name in the source database (DuckDB/other)
-        description: "The legacy users table, holding raw, unvalidated data as strings."
+models:
+  # 1. Bronze Stage 1: The simple SQL View over the Seed
+  - name: users_old
+    description: "Bronze Stage 1: A simple SQL view created from the challenge_dataset seed. This serves as the consistent starting point for all Bronze transformations."
 
-        # Freshness checks are useful even in Bronze to monitor source data ingestion
-        loaded_at_field: created_at
-        freshness:
-          warn_after: {count: 12, period: hour}
-          error_after: {count: 24, period: hour}
+    # This model doesn't need full column definitions if it just SELECT *,
+    # but we can add basic checks.
+    tests:
+      - not_empty
 
-        columns:
-          - name: id
-            description: "User ID (raw string)."
+  # 2. Bronze Stage 2: The Python Model (users_flagged.py)
+  - name: users_flagged
+    description: "Bronze Stage 2: Data sourced from users_old, augmented with anomaly flags computed by Polars, used for subsequent remediation and logging."
 
-          - name: first_name
-            description: "Raw first name (VARCHAR)."
+    columns:
+      # --- Original/Raw Columns (Include these to confirm structure) ---
+      - name: id
+        description: "Original raw user ID string."
+      - name: email
+        description: "Original raw email string."
+      - name: status
+        description: "Original raw status string."
+      # ... (Include all other original columns: first_name, last_name, phone, birth_date, created_at) ...
 
-          - name: last_name
-            description: "Raw last name (VARCHAR)."
+      # --- New Derived/Typed Columns (Document these for clarity) ---
+      - name: id_int
+        description: "Safely casted ID (integer). NULL if raw ID failed to parse."
+      - name: birth_date_dt
+        description: "Safely parsed Birth Date (DATE type). NULL if raw string failed to parse."
+      - name: created_at_dt
+        description: "Safely parsed Creation Timestamp (DATETIME type). NULL if raw string failed to parse."
+      # ... (Document other derived typed columns: phone_int, status_lower, email_stripped) ...
 
-          - name: email
-            description: "Raw email address (VARCHAR)."
+      # --- Anomaly Flag Columns (The most critical part) ---
+      - name: is_age_anomaly
+        description: "TRUE if user was under 18 at creation OR if dates are invalid/missing."
+        tests:
+          - not_null
 
-          - name: phone
-            description: "Raw phone number (VARCHAR)."
+      - name: is_identifier_anomaly
+        description: "TRUE if email is missing/empty OR if phone/birthdate are invalid/unparsable."
+        tests:
+          - not_null
 
-          - name: status
-            description: "Raw account status (VARCHAR)."
+      - name: is_status_anomaly
+        description: "TRUE if the raw status field is NULL or empty."
+        tests:
+          - not_null
 
-          - name: birth_date
-            description: "Raw birth date (VARCHAR), inconsistent format expected."
-
-          - name: created_at
-            description: "Raw creation timestamp (VARCHAR)."
+      - name: is_anomalous
+        description: "The composite flag: TRUE if any individual anomaly flag is TRUE. Marks the record for remediation and logging."
+        tests:
+          - not_null
