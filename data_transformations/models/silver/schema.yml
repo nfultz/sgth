@@ -20,3 +20,17 @@ models:
         tests:
           - not_null
           
+  - name: anomalies_log
+    description: "A log table containing user IDs and diagnostic flags for records that were deemed anomalous and remediated (status set to 'cancelled') in the users_new table."
+    config:
+      schema: reports # Optional: materializes in a separate 'reports' schema
+    
+    columns:
+      - name: anomalous_user_id
+        description: "The primary key of the record that was flagged as anomalous."
+        tests:
+          - not_null
+
+      - name: remediation_action
+        description: "Description of the automated action taken (e.g., status cancellation)."
+      # ... (document all flag columns as inherited from the Bronze layer)
