@@ -31,6 +31,31 @@ def is_18yo(birth_date_dt, created_at_dt):
         (age_at_creation < 18)
     )
 
+def is_invalid_phone_math(phone_int):
+    """
+    Polars expression: TRUE if the phone integer fails length or prefix rules.
+    This relies on the phone being successfully cast to an integer in the main model.
+    """
+    # 1. Check for missing/uncastable data
+    is_missing_or_dirty = phone_int.is_null()
+
+    # 2. Check for 10 digits exact length (10 digits means 10^9 <= number < 10^10)
+    is_not_ten_digits = (phone_int < 10**9) | (phone_int >= 10**10)
+
+    # 3. Check for restricted prefixes (0, 1, 555, 911)
+
+    # Get the first digit (by dividing by 10^9)
+    first_digit = (phone_int / 10**9).cast(pl.Int64)
+    is_invalid_start = (first_digit == 0) | (first_digit == 1)
+
+    # Get the first three digits (by dividing by 10^7)
+    first_three_digits = (phone_int / 10**7).cast(pl.Int64)
+    is_reserved_prefix_3 = (first_three_digits == 555) | (first_three_digits == 911)
+
+    # The ANOMALY flag is TRUE if it's missing OR fails any of the rules.
+    return is_missing_or_dirty | is_not_ten_digits | is_invalid_start | is_reserved_prefix_3
+
+
 def is_invalid_identifiers(email_stripped, phone_int, birth_date_dt):
     """
     Polars expression: TRUE if any required identifier is invalid/missing/unparsable.
@@ -48,7 +73,7 @@ def is_invalid_identifiers(email_stripped, phone_int, birth_date_dt):
     )
 
     # Check 3: Phone is invalid if cast failed
-    is_phone_invalid = phone_int.is_null()
+    is_phone_invalid = is_invalid_phone_math(phone_int)
 
     return is_bd_invalid | is_email_invalid | is_phone_invalid
 
