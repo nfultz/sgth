@@ -1,4 +1,4 @@
--- data_transformation/models/bronze/raw_data.sql
+-- data_transformations/models/bronze/users_old.sql
 -- Simply select all columns from the dbt seed table
 
 SELECT

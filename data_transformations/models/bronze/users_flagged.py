@@ -22,13 +22,22 @@ def is_18yo(birth_date_dt, created_at_dt):
     Polars expression: TRUE if the user was under 18 or if dates are invalid/missing.
     (i.e., this returns the ANOMALY flag).
     """
-    # Calculate age in years at creation time
-    age_at_creation = (created_at_dt.dt.year() - birth_date_dt.dt.year())
+    # Calculate age in years at creation time, accounting for whether birthday has occurred
+    age_at_creation = (
+        created_at_dt.dt.year() - birth_date_dt.dt.year()
+        - (
+            (created_at_dt.dt.month() < birth_date_dt.dt.month())
+            | (
+                (created_at_dt.dt.month() == birth_date_dt.dt.month())
+                & (created_at_dt.dt.day() < birth_date_dt.dt.day())
+            )
+        ).cast(pl.Int64)
+    )
 
     return (
-        birth_date_dt.is_null() |
-        created_at_dt.is_null() |
-        (age_at_creation < 18)
+        birth_date_dt.is_null()
+        | created_at_dt.is_null()
+        | (age_at_creation < 18)
     )
 
 def is_invalid_phone_math(phone_int):
@@ -61,7 +70,7 @@ def is_invalid_identifiers(email_stripped, phone_int, birth_date_dt):
     Polars expression: TRUE if any required identifier is invalid/missing/unparsable.
     (i.e., this returns the ANOMALY flag).
     """
-# Check 1: Birthdate is invalid if cast failed
+    # Check 1: Birthdate is invalid if cast failed
     is_bd_invalid = birth_date_dt.is_null()
 
     # Check 2: Email is invalid if NULL/empty OR if it fails the regex match
@@ -129,5 +138,5 @@ def model(dbt, session):
             )
 
     # Return all columns (raw, typed, and flags) for downstream use
-    return flagged_df.select(pl.all())
+    return flagged_df
 
