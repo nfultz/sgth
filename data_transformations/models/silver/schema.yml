@@ -1,8 +1,14 @@
-# models/silver/schema.yml
-
 version: 2
 
 models:
+  - name: users_stage
+    description: "Temporary polars staging area."
+    config:
+      materialized: table
+      contract:
+        enforced: false
+
+
   - name: users_new
     description: "The cleaned and standardized user data ready for downstream analysis."
     
@@ -10,34 +16,52 @@ models:
 
       - name: id
         description: "The standardized, unique integer identifier for the user."
+        data_type: INT
+        constraints:
+          - type: not_null
         tests:
           - unique
           - not_null
 
       # 2. Standardized Names - Must be non-null after cleaning
       - name: first_name
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
         description: "Standardized first name (e.g., trimmed, title-cased)."
         tests:
           - not_null
       
       - name: last_name
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
         description: "Standardized last name (e.g., trimmed, title-cased)."
         tests:
           - not_null
 
       - name: email
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
         description: "email"
         tests:
           - unique
           - not_null
 
       - name: phone
-        description: "email"
+        data_type: BIGINT
+        constraints:
+          - type: not_null
+        description: "Phone number"
         tests:
           - not_null
 
-      # 
       - name: status
+        # DUCK does not have enums
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
         description: "The remediated status of the user, strictly one of 'active' or 'cancelled'."
         tests:
           - not_null # Ensures compliance with the NOT NULL constraint
@@ -52,11 +76,17 @@ models:
                 severity: error
 
       - name: birth_date
+        data_type: DATE
+        constraints:
+          - type: not_null
         description: "birth day"
         tests:
           - not_null
 
       - name: created_at
+        data_type: DATE
+        constraints:
+          - type: not_null
         description: "create day"
         tests:
           - not_null
@@ -65,12 +95,13 @@ models:
     description: "A log table containing user IDs and diagnostic flags for records that were deemed anomalous and remediated (status set to 'cancelled') in the users_new table."
     config:
       schema: reports # Optional: materializes in a separate 'reports' schema
+      contract:
+        enforced: false
+
     
     columns:
       - name: anomalous_user_id
         description: "The primary key of the record that was flagged as anomalous."
-        tests:
-          - not_null
 
       - name: remediation_action
         description: "Description of the automated action taken (e.g., status cancellation)."

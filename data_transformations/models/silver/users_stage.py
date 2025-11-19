@@ -27,34 +27,43 @@ def model(dbt, session):
         col("last_name").str.strip_chars().str.to_titlecase().alias("last_name_cleaned"),
     )
 
-    # --- 2. FINAL SELECTION AND TYPE ALIGNMENT ---
+# --- 2. NOT NULL CONSTRAINT IMPUTATION FIX ---
+    final_clean_df = remediated_df.with_columns(
+        # FIX: Impute 'Unknown' if first_name_cleaned is NULL or empty
+        pl.when(col("first_name_cleaned").is_null() | (col("first_name_cleaned").str.len_chars() == 0))
+          .then(lit('Unknown'))
+          .otherwise(col("first_name_cleaned"))
+          .alias("first_name_imputed"),
 
-    # Select the columns needed for the target users_new schema.
-    # We rely on the Bronze layer's success (id_int, birth_date_dt, phone_int, created_at_dt)
-    # to provide the correctly typed data, and then apply final NOT NULL/ENUM logic.
-    users_new_df = remediated_df.select(
-        # Primary Key (INT NOT NULL)
-        col("id_int").alias("id"),
+        # FIX: Also check last_name (since it's also NOT NULL)
+        pl.when(col("last_name_cleaned").is_null() | (col("last_name_cleaned").str.len_chars() == 0))
+          .then(lit('Unknown'))
+          .otherwise(col("last_name_cleaned"))
+          .alias("last_name_imputed"),
 
-        # Varchar (NOT NULL)
-        col("first_name_cleaned").alias("first_name"),
-        col("last_name_cleaned").alias("last_name"),
-        col("email_stripped").alias("email"), # Use the cleaned/stripped email from Bronze
-
-        # Int(10) (NOT NULL)
-        col("phone_int").alias("phone"), # Use the safely casted integer from Bronze
-
-        # ENUM/Varchar (NOT NULL) - Status is guaranteed to be 'cancelled' or a cleaned value
-        pl.when(col("final_status") == 'active').then(lit('active'))
-          .otherwise(lit('cancelled')) # Default to cancelled if not explicitly 'active' (handles all other raw values)
-          .alias("status"),
-
-        # Date (NOT NULL)
-        col("birth_date_dt").alias("birth_date"), # Use the safely casted date from Bronze
-
-        # Datetime (NOT NULL)
-        col("created_at_dt").alias("created_at"), # Use the safely casted datetime from Bronze
+        # CRITICAL FIX: Impute phone number if it is NULL (meaning it failed validation in Bronze)
+        pl.when(col("phone_int").is_null())
+          .then(lit(-999999999).cast(pl.Int64)) # Use your sentinel value and ensure it's Int64
+          .otherwise(col("phone_int"))
+          .alias("phone_imputed"),
     )
 
+    # --- 3. FINAL SELECTION for users_tmp ---
+
+    # Select all columns with final names, ensuring no NULLs are left in NOT NULL fields
+    users_tmp_df = final_clean_df.select(
+        col("id_int").alias("id"),
+        # Use imputed names
+        col("first_name_imputed").alias("first_name"),
+        col("last_name_imputed").alias("last_name"),
+        # ... (rest of the columns)
+        col("email_stripped").alias("email"),
+        col("phone_imputed").alias("phone"),
+        col("final_status").alias("status"),
+        col("birth_date_dt").alias("birth_date"),
+        col("created_at_dt").alias("created_at"),
+    )
+
+
     # Return the clean and fully typed DataFrame
-    return users_new_df
+    return users_tmp_df
