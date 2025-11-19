@@ -32,6 +32,8 @@ orderly-set==5.5.0
 packaging==25.0
 parsedatetime==2.6
 pathspec==0.12.1
+polars==1.35.2
+polars-runtime-32==1.35.2
 protobuf==6.33.1
 pydantic==2.12.4
 pydantic-core==2.41.5
