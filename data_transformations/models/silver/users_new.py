@@ -13,9 +13,13 @@ def model(dbt, session):
     remediated_df = df.with_columns(
         # CRITICAL: Apply the remediation rule:
         # If the record is anomalous, set status to 'cancelled'; otherwise, use the cleaned status string.
-        pl.when(col("is_anomalous") == True)
-          .then(lit("cancelled"))
-          .otherwise(col("status_lower")) # status_lower is from the Bronze stage
+        # CRITICAL: Comprehensive Status Remediation
+        # 1. Check if the record is CLEAN AND represents 'active'
+        pl.when((col("is_anomalous") == False) & (col("status_lower").str == "active"))
+          .then(lit('active'))
+
+          # 2. Otherwise (if anomalous OR if clean but status is 'pending', 'inactive', etc.)
+          .otherwise(lit('cancelled'))
           .alias("final_status"),
 
         # Standardize other text fields using Bronze's raw data
