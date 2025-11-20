@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies
         run: |
           # Install dbt-duckdb and polars (required for your Python models)
-          pip install dbt-duckdb polars
+          pip install dbt-duckdb polars pyarrow
 
       - name: dbt Debug (Verify connection)
         # This step helps verify dbt can find the profile and adapter
