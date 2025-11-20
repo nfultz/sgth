@@ -1,12 +1,13 @@
 name: dbt Data Quality Checks (CI)
 
 on:
-  # Triggers the workflow on push or pull request events to the main branch
+  # Triggers the workflow on push to 'main' AND any other branch ('*').
   push:
     branches:
       - main
       - '*'
   pull_request:
+    # Keeps the pull request trigger focusing on PRs targeting main.
     branches:
       - main
   # Allows you to run this workflow manually from the Actions tab
@@ -19,6 +20,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # CRITICAL FIX: Create the 'data' directory required by the DuckDB profile
+      # This resolves the "No such file or directory" error when dbt tries to connect.
+      - name: Create Database Directory
+        run: mkdir -p data
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,9 +45,7 @@ jobs:
         run: dbt deps --project-dir data_transformations
 
       - name: Load CI Seed Data
-        # IMPORTANT: Since you don't check in the full data set,
-        # this step assumes a tiny, non-sensitive seed file (e.g., models/seeds/ci_test_data.csv)
-        # exists in your repo for testing purposes. This file will be loaded into DuckDB.
+        # IMPORTANT: This loads the small, mock dataset for testing.
         run: dbt seed --project-dir data_transformations --full-refresh
 
       - name: Run dbt Build (Runs models and tests)
