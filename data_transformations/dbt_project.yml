@@ -23,6 +23,10 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 
+# This sets a conditional variable for use in the project.
+vars:
+  is_ci: "{{ env_var('DBT_CI_RUN', 'false') == 'true' }}"
+
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
@@ -32,5 +36,6 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   data_transformations:
     # Config indicated by + and applies to all files under models/example/
+    +seed_paths: [ "{{ 'seeds/ci' if var('is_ci') else 'seeds' }}" ]
     example:
       +materialized: view
