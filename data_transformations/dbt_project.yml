@@ -26,7 +26,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 # --- DYNAMIC SEED PATH CONFIGURATION (FIX) ---
 seeds:
   data_transformations:
-    # If is_ci is true, dbt looks in 'seeds/ci'. Otherwise, it defaults to 'seeds'.
+    # If DBT_SEEDS_PATH is set, dbt looks in that path. Otherwise, it defaults to 'seeds'.
     +seed_paths: [ "{{ env_var('DBT_SEEDS_PATH', 'seeds') }}" ]
 
 

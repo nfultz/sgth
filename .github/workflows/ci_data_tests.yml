@@ -22,6 +22,7 @@ jobs:
       # (seeds/ci/) defined in your dbt_project.yml, allowing you to use
       # the small mock data for testing.
       DBT_SEEDS_PATH: 'seeds/ci'
+      DBT_PROFILES_DIR: '.'  # Points dbt to use profiles.yml in repo root
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,6 +59,3 @@ jobs:
         # then runs all schema and data tests.
         run: dbt build --project-dir data_transformations
 
-      - name: Check for Test Failures
-        # If 'dbt build' fails (due to a test failure or model error), the job stops here.
-        run: echo "dbt build completed successfully. All models transformed and tests passed."
