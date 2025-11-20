@@ -1,0 +1,61 @@
+name: dbt Data Quality Checks (CI)
+
+on:
+  # Triggers the workflow on push to 'main' AND any other branch ('*').
+  push:
+    branches:
+      - main
+      - '*'
+  pull_request:
+    # Keeps the pull request trigger focusing on PRs targeting main.
+    branches:
+      - main
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Defines a single job named 'test'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # CRITICAL FIX: This environment variable activates the CI seed path
+      # (seeds/ci/) defined in your dbt_project.yml, allowing you to use
+      # the small mock data for testing.
+      DBT_SEEDS_PATH: 'seeds/ci'
+      DBT_PROFILES_DIR: '.'  # Points dbt to use profiles.yml in repo root
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # CRITICAL FIX: Create the 'data' directory required by the DuckDB profile
+      # This resolves the "No such file or directory" error when dbt tries to connect.
+      - name: Create Database Directory
+        run: mkdir -p data
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # Use a stable version of Python
+
+      - name: Install dependencies
+        run: |
+          # Install dbt-duckdb and polars (required for your Python models)
+          pip install dbt-duckdb polars pyarrow
+
+      - name: dbt Debug (Verify connection)
+        # This step helps verify dbt can find the profile and adapter
+        run: dbt debug --project-dir data_transformations
+
+      - name: Install dbt dependencies
+        # If you use dbt packages (like dbt_utils), this step is necessary
+        run: dbt deps --project-dir data_transformations
+
+      - name: Load CI Seed Data
+        # IMPORTANT: This loads the small, mock dataset for testing.
+        run: dbt seed --project-dir data_transformations --full-refresh
+
+      - name: Run dbt Build (Runs models and tests)
+        # Running 'dbt build' executes the models using the small seed data,
+        # then runs all schema and data tests.
+        run: dbt build --project-dir data_transformations
+

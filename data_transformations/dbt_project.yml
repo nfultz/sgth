@@ -23,6 +23,14 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 
+# --- DYNAMIC SEED PATH CONFIGURATION (FIX) ---
+seeds:
+  data_transformations:
+    # If DBT_SEEDS_PATH is set, dbt looks in that path. Otherwise, it defaults to 'seeds'.
+    +seed_paths: [ "{{ env_var('DBT_SEEDS_PATH', 'seeds') }}" ]
+
+
+
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
