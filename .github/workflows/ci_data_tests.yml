@@ -17,6 +17,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # CRITICAL FIX: This environment variable activates the CI seed path
+      # (seeds/ci/) defined in your dbt_project.yml, allowing you to use
+      # the small mock data for testing.
+      DBT_SEEDS_PATH: 'seeds/ci'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
